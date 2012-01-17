@@ -4,6 +4,7 @@
 #include "../../../arch/x86/include/asm/unistd.h"
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -20,13 +21,15 @@ static int sys_vmnotify_fd(struct vmnotify_config *config)
 int main(int argc, char *argv[])
 {
 	struct vmnotify_config config;
-	struct vmnotify_event event;
 	struct pollfd pollfd;
 	int i;
 	int fd;
 
 	config = (struct vmnotify_config) {
-		.type			= VMNOTIFY_TYPE_SAMPLE|VMNOTIFY_TYPE_FREE_THRESHOLD,
+		.type			= VMNOTIFY_TYPE_SAMPLE | VMNOTIFY_TYPE_FREE_THRESHOLD,
+		.event_attrs		= VMNOTIFY_EATTR_NR_AVAIL_PAGES
+					| VMNOTIFY_EATTR_NR_FREE_PAGES,
+					| VMNOTIFY_EATTR_NR_SWAP_PAGES,
 		.sample_period_ns	= 1000000000L,
 		.free_threshold		= 99,
 	};
@@ -38,6 +41,10 @@ int main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < 10; i++) {
+		char buffer[sizeof(struct vmnotify_event) + 3 * sizeof(uint64_t)];
+		struct vmnotify_event *event;
+		int n = 0;
+
 		pollfd.fd		= fd;
 		pollfd.events		= POLLIN;
 
@@ -46,18 +53,25 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		memset(&event, 0, sizeof(event));
+		memset(&buffer, 0, sizeof(buffer));
 
-		if (read(fd, &event, sizeof(event)) < 0) {
+		if (read(fd, &buffer, sizeof(buffer)) < 0) {
 			perror("read failed");
 			exit(1);
 		}
 
-		printf("VM event:\n");
-		printf("\tsize=%lu\n", event.size);
-		printf("\tnr_avail_pages=%Lu\n", event.nr_avail_pages);
-		printf("\tnr_swap_pages=%Lu\n", event.nr_swap_pages);
-		printf("\tnr_free_pages=%Lu\n", event.nr_free_pages);
+		event = (void *) buffer;
+
+		printf("VM event (%Lu bytes):\n", event->size);
+
+		if (event->attrs & VMNOTIFY_EATTR_NR_AVAIL_PAGES)
+			printf("  VMNOTIFY_EATTR_NR_AVAIL_PAGES: %Lu\n", event->attr_values[n++]);
+
+		if (event->attrs & VMNOTIFY_EATTR_NR_FREE_PAGES)
+			printf("  VMNOTIFY_EATTR_NR_FREE_PAGES : %Lu\n", event->attr_values[n++]);
+
+		if (event->attrs & VMNOTIFY_EATTR_NR_SWAP_PAGES)
+			printf("  VMNOTIFY_EATTR_NR_SWAP_PAGES : %Lu\n", event->attr_values[n++]);
 	}
 	if (close(fd) < 0) {
 		perror("close failed");

@@ -9,12 +9,25 @@
 
 #define VMNOTIFY_MAX_FREE_THRESHOD	100
 
+#define VMNOTIFY_MAX_EATTR_ATTRS	64
+
+struct vmnotify_watch_event {
+	u64				nr_avail_pages;
+	u64				nr_free_pages;
+	u64				nr_swap_pages;
+};
+
 struct vmnotify_watch {
 	struct vmnotify_config		config;
 
 	struct mutex			mutex;
 	bool				pending;
-	struct vmnotify_event		event;
+
+	/*
+ 	 * Attributes
+ 	 */
+	unsigned long			nr_attrs;
+	u64				attr_values[64];
 
 	/* sampling */
 	struct hrtimer			timer;
@@ -23,7 +36,8 @@ struct vmnotify_watch {
 	wait_queue_head_t		waitq;
 };
 
-static bool vmnotify_match(struct vmnotify_watch *watch, struct vmnotify_event *event)
+static bool vmnotify_match(struct vmnotify_watch *watch,
+			   struct vmnotify_watch_event *event)
 {
 	if (watch->config.type & VMNOTIFY_TYPE_FREE_THRESHOLD) {
 		u64 threshold;
@@ -41,20 +55,22 @@ static bool vmnotify_match(struct vmnotify_watch *watch, struct vmnotify_event *
 
 static void vmnotify_sample(struct vmnotify_watch *watch)
 {
-	struct vmnotify_event event;
+	struct vmnotify_watch_event event;
 	struct sysinfo si;
+	int n = 0;
 
 	memset(&event, 0, sizeof(event));
 
-	event.size		= sizeof(event);
 	event.nr_free_pages	= global_page_state(NR_FREE_PAGES);
 
 	si_meminfo(&si);
 	event.nr_avail_pages	= si.totalram;
 
 #ifdef CONFIG_SWAP
-	si_swapinfo(&si);
-	event.nr_swap_pages	= si.totalswap;
+	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_SWAP_PAGES) {
+		si_swapinfo(&si);
+		event.nr_swap_pages	= si.totalswap;
+	}
 #endif
 
 	if (!vmnotify_match(watch, &event))
@@ -64,7 +80,16 @@ static void vmnotify_sample(struct vmnotify_watch *watch)
 
 	watch->pending = true;
 
-	memcpy(&watch->event, &event, sizeof(event));
+	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_AVAIL_PAGES)
+		watch->attr_values[n++] = event.nr_avail_pages;
+
+	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_FREE_PAGES)
+		watch->attr_values[n++] = event.nr_free_pages;
+
+	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_SWAP_PAGES)
+		watch->attr_values[n++] = event.nr_swap_pages;
+
+	watch->nr_attrs = n;
 
 	mutex_unlock(&watch->mutex);
 }
@@ -113,17 +138,35 @@ static unsigned int vmnotify_poll(struct file *file, poll_table *wait)
 static ssize_t vmnotify_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
 	struct vmnotify_watch *watch = file->private_data;
+	struct vmnotify_event event;
 	ssize_t ret = 0;
+	u64 attr_size;
 
 	mutex_lock(&watch->mutex);
 
 	if (!watch->pending)
 		goto out_unlock;
 
-	if (count > sizeof(struct vmnotify_event))
-		count = sizeof(struct vmnotify_event);
+	attr_size = watch->nr_attrs * sizeof(u64);
 
-	if (copy_to_user(buf, &watch->event, count)) {
+	memset(&event, 0, sizeof(event));
+	event.size	= sizeof(struct vmnotify_event) + attr_size;
+	event.attrs	= watch->config.event_attrs;
+
+	if (count < sizeof(event))
+		goto out_unlock;
+
+	if (copy_to_user(buf, &event, sizeof(event))) {
+		ret = -EFAULT;
+		goto out_unlock;
+	}
+
+	count -= sizeof(event);
+
+	if (count > attr_size)
+		count = attr_size;
+
+	if (copy_to_user(buf + sizeof(event), watch->attr_values, count)) {
 		ret = -EFAULT;
 		goto out_unlock;
 	}
