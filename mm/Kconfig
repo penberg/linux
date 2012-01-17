@@ -373,3 +373,9 @@ config CLEANCACHE
 	  in a negligible performance hit.
 
 	  If unsure, say Y to enable cleancache
+
+config VMNOTIFY
+	bool "Enable VM event notification system"
+	default n
+	help
+	  If unsure, say N to disable vmnotify
