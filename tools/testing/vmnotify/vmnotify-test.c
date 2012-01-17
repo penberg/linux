@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	config = (struct vmnotify_config) {
 		.type			= VMNOTIFY_TYPE_SAMPLE | VMNOTIFY_TYPE_FREE_THRESHOLD,
 		.event_attrs		= VMNOTIFY_EATTR_NR_AVAIL_PAGES
-					| VMNOTIFY_EATTR_NR_FREE_PAGES,
+					| VMNOTIFY_EATTR_NR_FREE_PAGES
 					| VMNOTIFY_EATTR_NR_SWAP_PAGES,
 		.sample_period_ns	= 1000000000L,
 		.free_threshold		= 99,
