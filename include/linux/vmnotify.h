@@ -18,7 +18,7 @@ struct vmnotify_config {
 	/*
 	 * Size of the struct for ABI extensibility.
 	 */
-	__u32		   size;
+	__u32			size;
 
 	/*
 	 * Notification type bitmask
