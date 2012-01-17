@@ -113,19 +113,22 @@ static unsigned int vmnotify_poll(struct file *file, poll_table *wait)
 static ssize_t vmnotify_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
 	struct vmnotify_watch *watch = file->private_data;
-	int ret = 0;
+	ssize_t ret = 0;
 
 	mutex_lock(&watch->mutex);
 
 	if (!watch->pending)
 		goto out_unlock;
 
-	if (copy_to_user(buf, &watch->event, sizeof(struct vmnotify_event))) {
+	if (count > sizeof(struct vmnotify_event))
+		count = sizeof(struct vmnotify_event);
+
+	if (copy_to_user(buf, &watch->event, count)) {
 		ret = -EFAULT;
 		goto out_unlock;
 	}
 
-	ret = watch->event.size;
+	ret = count;
 
 	watch->pending = false;
 
