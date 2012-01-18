@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <poll.h>
@@ -22,8 +23,13 @@ int main(int argc, char *argv[])
 {
 	struct vmnotify_config config;
 	struct pollfd pollfd;
-	int i;
+	long phys_pages;
 	int fd;
+	int i;
+
+	phys_pages = sysconf(_SC_PHYS_PAGES);
+
+	printf("Physical pages: %ld\n", phys_pages);
 
 	config = (struct vmnotify_config) {
 		.type			= VMNOTIFY_TYPE_SAMPLE | VMNOTIFY_TYPE_FREE_THRESHOLD,
@@ -31,7 +37,7 @@ int main(int argc, char *argv[])
 					| VMNOTIFY_EATTR_NR_FREE_PAGES
 					| VMNOTIFY_EATTR_NR_SWAP_PAGES,
 		.sample_period_ns	= 1000000000L,
-		.free_threshold		= 99,
+		.free_pages_threshold	= phys_pages,
 	};
 
 	fd = sys_vmnotify_fd(&config);

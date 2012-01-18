@@ -40,13 +40,7 @@ static bool vmnotify_match(struct vmnotify_watch *watch,
 			   struct vmnotify_watch_event *event)
 {
 	if (watch->config.type & VMNOTIFY_TYPE_FREE_THRESHOLD) {
-		u64 threshold;
-
-		if (!event->nr_avail_pages)
-			return false;
-
-		threshold = event->nr_free_pages * 100 / event->nr_avail_pages;
-		if (threshold > watch->config.free_threshold)
+		if (event->nr_free_pages > watch->config.free_pages_threshold)
 			return false;
 	}
 
@@ -227,11 +221,6 @@ static int vmnotify_copy_config(struct vmnotify_config __user *uconfig,
 
 	if (config->type & VMNOTIFY_TYPE_SAMPLE) {
 		if (config->sample_period_ns < NSEC_PER_MSEC)
-			return -EINVAL;
-	}
-
-	if (config->type & VMNOTIFY_TYPE_FREE_THRESHOLD) {
-		if (config->free_threshold > VMNOTIFY_MAX_FREE_THRESHOD)
 			return -EINVAL;
 	}
 

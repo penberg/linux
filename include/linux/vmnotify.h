@@ -31,9 +31,9 @@ struct vmnotify_config {
 	__u64			event_attrs;
 
 	/*
-	 * Free memory threshold in percentages [1..99]
+	 * Threshold of free pages in the system.
 	 */
-	__u32			free_threshold;
+	__u32			free_pages_threshold;
 
 	/*
 	 * Sample period in nanoseconds
