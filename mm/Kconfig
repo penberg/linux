@@ -374,8 +374,8 @@ config CLEANCACHE
 
 	  If unsure, say Y to enable cleancache
 
-config VMNOTIFY
+config VMEVENT
 	bool "Enable VM event notification system"
 	default n
 	help
-	  If unsure, say N to disable vmnotify
+	  If unsure, say N to disable vmevent

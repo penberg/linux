@@ -1,5 +1,5 @@
 #include <linux/anon_inodes.h>
-#include <linux/vmnotify.h>
+#include <linux/vmevent.h>
 #include <linux/syscalls.h>
 #include <linux/file.h>
 #include <linux/list.h>
@@ -7,18 +7,18 @@
 #include <linux/slab.h>
 #include <linux/swap.h>
 
-#define VMNOTIFY_MAX_FREE_THRESHOD	100
+#define VMEVENT_MAX_FREE_THRESHOD	100
 
-#define VMNOTIFY_MAX_EATTR_ATTRS	64
+#define VMEVENT_MAX_EATTR_ATTRS	64
 
-struct vmnotify_watch_event {
+struct vmevent_watch_event {
 	u64				nr_avail_pages;
 	u64				nr_free_pages;
 	u64				nr_swap_pages;
 };
 
-struct vmnotify_watch {
-	struct vmnotify_config		config;
+struct vmevent_watch {
+	struct vmevent_config		config;
 
 	struct mutex			mutex;
 	bool				pending;
@@ -36,10 +36,10 @@ struct vmnotify_watch {
 	wait_queue_head_t		waitq;
 };
 
-static bool vmnotify_match(struct vmnotify_watch *watch,
-			   struct vmnotify_watch_event *event)
+static bool vmevent_match(struct vmevent_watch *watch,
+			   struct vmevent_watch_event *event)
 {
-	if (watch->config.type & VMNOTIFY_TYPE_FREE_THRESHOLD) {
+	if (watch->config.type & VMEVENT_TYPE_FREE_THRESHOLD) {
 		if (event->nr_free_pages > watch->config.free_pages_threshold)
 			return false;
 	}
@@ -47,9 +47,9 @@ static bool vmnotify_match(struct vmnotify_watch *watch,
 	return true;
 }
 
-static void vmnotify_sample(struct vmnotify_watch *watch)
+static void vmevent_sample(struct vmevent_watch *watch)
 {
-	struct vmnotify_watch_event event;
+	struct vmevent_watch_event event;
 	struct sysinfo si;
 	int n = 0;
 
@@ -61,26 +61,26 @@ static void vmnotify_sample(struct vmnotify_watch *watch)
 	event.nr_avail_pages	= si.totalram;
 
 #ifdef CONFIG_SWAP
-	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_SWAP_PAGES) {
+	if (watch->config.event_attrs & VMEVENT_EATTR_NR_SWAP_PAGES) {
 		si_swapinfo(&si);
 		event.nr_swap_pages	= si.totalswap;
 	}
 #endif
 
-	if (!vmnotify_match(watch, &event))
+	if (!vmevent_match(watch, &event))
 		return;
 
 	mutex_lock(&watch->mutex);
 
 	watch->pending = true;
 
-	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_AVAIL_PAGES)
+	if (watch->config.event_attrs & VMEVENT_EATTR_NR_AVAIL_PAGES)
 		watch->attr_values[n++] = event.nr_avail_pages;
 
-	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_FREE_PAGES)
+	if (watch->config.event_attrs & VMEVENT_EATTR_NR_FREE_PAGES)
 		watch->attr_values[n++] = event.nr_free_pages;
 
-	if (watch->config.event_attrs & VMNOTIFY_EATTR_NR_SWAP_PAGES)
+	if (watch->config.event_attrs & VMEVENT_EATTR_NR_SWAP_PAGES)
 		watch->attr_values[n++] = event.nr_swap_pages;
 
 	watch->nr_attrs = n;
@@ -88,12 +88,12 @@ static void vmnotify_sample(struct vmnotify_watch *watch)
 	mutex_unlock(&watch->mutex);
 }
 
-static enum hrtimer_restart vmnotify_timer_fn(struct hrtimer *hrtimer)
+static enum hrtimer_restart vmevent_timer_fn(struct hrtimer *hrtimer)
 {
-	struct vmnotify_watch *watch = container_of(hrtimer, struct vmnotify_watch, timer);
+	struct vmevent_watch *watch = container_of(hrtimer, struct vmevent_watch, timer);
 	u64 sample_period = watch->config.sample_period_ns;
 
-	vmnotify_sample(watch);
+	vmevent_sample(watch);
 
 	hrtimer_forward_now(hrtimer, ns_to_ktime(sample_period));
 
@@ -102,19 +102,19 @@ static enum hrtimer_restart vmnotify_timer_fn(struct hrtimer *hrtimer)
 	return HRTIMER_RESTART;
 }
 
-static void vmnotify_start_timer(struct vmnotify_watch *watch)
+static void vmevent_start_timer(struct vmevent_watch *watch)
 {
 	u64 sample_period = watch->config.sample_period_ns;
 
 	hrtimer_init(&watch->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	watch->timer.function = vmnotify_timer_fn;
+	watch->timer.function = vmevent_timer_fn;
 
 	hrtimer_start(&watch->timer, ns_to_ktime(sample_period), HRTIMER_MODE_REL_PINNED);
 }
 
-static unsigned int vmnotify_poll(struct file *file, poll_table *wait)
+static unsigned int vmevent_poll(struct file *file, poll_table *wait)
 {
-	struct vmnotify_watch *watch = file->private_data;
+	struct vmevent_watch *watch = file->private_data;
 	unsigned int events = 0;
 
 	poll_wait(file, &watch->waitq, wait);
@@ -129,10 +129,10 @@ static unsigned int vmnotify_poll(struct file *file, poll_table *wait)
 	return events;
 }
 
-static ssize_t vmnotify_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
-	struct vmnotify_watch *watch = file->private_data;
-	struct vmnotify_event event;
+	struct vmevent_watch *watch = file->private_data;
+	struct vmevent_event event;
 	ssize_t ret = 0;
 	u64 attr_size;
 
@@ -144,7 +144,7 @@ static ssize_t vmnotify_read(struct file *file, char __user *buf, size_t count, 
 	attr_size = watch->nr_attrs * sizeof(u64);
 
 	memset(&event, 0, sizeof(event));
-	event.size	= sizeof(struct vmnotify_event) + attr_size;
+	event.size	= sizeof(struct vmevent_event) + attr_size;
 	event.attrs	= watch->config.event_attrs;
 
 	if (count < sizeof(event))
@@ -175,9 +175,9 @@ out_unlock:
 	return ret;
 }
 
-static int vmnotify_release(struct inode *inode, struct file *file)
+static int vmevent_release(struct inode *inode, struct file *file)
 {
-	struct vmnotify_watch *watch = file->private_data;
+	struct vmevent_watch *watch = file->private_data;
 
 	hrtimer_cancel(&watch->timer);
 
@@ -186,15 +186,15 @@ static int vmnotify_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static const struct file_operations vmnotify_fops = {
-	.poll		= vmnotify_poll,
-	.read		= vmnotify_read,
-	.release	= vmnotify_release,
+static const struct file_operations vmevent_fops = {
+	.poll		= vmevent_poll,
+	.read		= vmevent_read,
+	.release	= vmevent_release,
 };
 
-static struct vmnotify_watch *vmnotify_watch_alloc(void)
+static struct vmevent_watch *vmevent_watch_alloc(void)
 {
-	struct vmnotify_watch *watch;
+	struct vmevent_watch *watch;
 
 	watch = kzalloc(sizeof *watch, GFP_KERNEL);
 	if (!watch)
@@ -207,19 +207,19 @@ static struct vmnotify_watch *vmnotify_watch_alloc(void)
 	return watch;
 }
 
-static int vmnotify_copy_config(struct vmnotify_config __user *uconfig,
-				struct vmnotify_config *config)
+static int vmevent_copy_config(struct vmevent_config __user *uconfig,
+				struct vmevent_config *config)
 {
 	int ret;
 
-	ret = copy_from_user(config, uconfig, sizeof(struct vmnotify_config));
+	ret = copy_from_user(config, uconfig, sizeof(struct vmevent_config));
 	if (ret)
 		return -EFAULT;
 
 	if (!config->type)
 		return -EINVAL;
 
-	if (config->type & VMNOTIFY_TYPE_SAMPLE) {
+	if (config->type & VMEVENT_TYPE_SAMPLE) {
 		if (config->sample_period_ns < NSEC_PER_MSEC)
 			return -EINVAL;
 	}
@@ -227,19 +227,19 @@ static int vmnotify_copy_config(struct vmnotify_config __user *uconfig,
 	return 0;
 }
 
-SYSCALL_DEFINE1(vmnotify_fd,
-		struct vmnotify_config __user *, uconfig)
+SYSCALL_DEFINE1(vmevent_fd,
+		struct vmevent_config __user *, uconfig)
 {
-	struct vmnotify_watch *watch;
+	struct vmevent_watch *watch;
 	struct file *file;
 	int err;
 	int fd;
 
-	watch = vmnotify_watch_alloc();
+	watch = vmevent_watch_alloc();
 	if (!watch)
 		return -ENOMEM;
 
-	err = vmnotify_copy_config(uconfig, &watch->config);
+	err = vmevent_copy_config(uconfig, &watch->config);
 	if (err)
 		goto err_free;
 
@@ -249,7 +249,7 @@ SYSCALL_DEFINE1(vmnotify_fd,
 		goto err_free;
 	}
 
-	file = anon_inode_getfile("[vmnotify]", &vmnotify_fops, watch, O_RDONLY);
+	file = anon_inode_getfile("[vmevent]", &vmevent_fops, watch, O_RDONLY);
 	if (IS_ERR(file)) {
 		err = PTR_ERR(file);
 		goto err_fd;
@@ -257,8 +257,8 @@ SYSCALL_DEFINE1(vmnotify_fd,
 
 	fd_install(fd, file);
 
-	if (watch->config.type & VMNOTIFY_TYPE_SAMPLE)
-		vmnotify_start_timer(watch);
+	if (watch->config.type & VMEVENT_TYPE_SAMPLE)
+		vmevent_start_timer(watch);
 
 	return fd;
 
