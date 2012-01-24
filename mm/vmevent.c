@@ -1,6 +1,7 @@
 #include <linux/anon_inodes.h>
 #include <linux/vmevent.h>
 #include <linux/syscalls.h>
+#include <linux/timer.h>
 #include <linux/file.h>
 #include <linux/list.h>
 #include <linux/poll.h>
@@ -31,7 +32,7 @@ struct vmevent_watch {
 	u64				attr_values[64];
 
 	/* sampling */
-	struct hrtimer			timer;
+	struct timer_list		timer;
 
 	/* poll */
 	wait_queue_head_t		waitq;
@@ -89,28 +90,26 @@ static void vmevent_sample(struct vmevent_watch *watch)
 	mutex_unlock(&watch->mutex);
 }
 
-static enum hrtimer_restart vmevent_timer_fn(struct hrtimer *hrtimer)
+static void vmevent_timer_fn(unsigned long data)
 {
-	struct vmevent_watch *watch = container_of(hrtimer, struct vmevent_watch, timer);
-	u64 sample_period = watch->config.sample_period_ns;
+	struct vmevent_watch *watch = (struct vmevent_watch *)data;
 
 	vmevent_sample(watch);
 
-	hrtimer_forward_now(hrtimer, ns_to_ktime(sample_period));
-
-	wake_up(&watch->waitq);
-
-	return HRTIMER_RESTART;
+	if (watch->pending)
+		wake_up(&watch->waitq);
+	mod_timer(&watch->timer, jiffies +
+			nsecs_to_jiffies64(watch->config.sample_period_ns));
 }
 
 static void vmevent_start_timer(struct vmevent_watch *watch)
 {
-	u64 sample_period = watch->config.sample_period_ns;
-
-	hrtimer_init(&watch->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	init_timer_deferrable(&watch->timer);
+	watch->timer.data = (unsigned long)watch;
 	watch->timer.function = vmevent_timer_fn;
-
-	hrtimer_start(&watch->timer, ns_to_ktime(sample_period), HRTIMER_MODE_REL_PINNED);
+	watch->timer.expires = jiffies +
+			nsecs_to_jiffies64(watch->config.sample_period_ns);
+	add_timer(&watch->timer);
 }
 
 static unsigned int vmevent_poll(struct file *file, poll_table *wait)
@@ -180,7 +179,7 @@ static int vmevent_release(struct inode *inode, struct file *file)
 {
 	struct vmevent_watch *watch = file->private_data;
 
-	hrtimer_cancel(&watch->timer);
+	del_timer_sync(&watch->timer);
 
 	kfree(watch);
 
