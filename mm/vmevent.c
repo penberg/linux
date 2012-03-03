@@ -6,6 +6,7 @@
 #include <linux/poll.h>
 #include <linux/slab.h>
 #include <linux/swap.h>
+#undef nr_swap_pages /* This is defined to a constant for SWAP=n case */
 
 #define VMEVENT_MAX_FREE_THRESHOD	100
 
