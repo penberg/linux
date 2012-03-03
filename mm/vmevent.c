@@ -51,18 +51,18 @@ static bool vmevent_match(struct vmevent_watch *watch,
 static void vmevent_sample(struct vmevent_watch *watch)
 {
 	struct vmevent_watch_event event;
-	struct sysinfo si;
 	int n = 0;
 
 	memset(&event, 0, sizeof(event));
 
 	event.nr_free_pages	= global_page_state(NR_FREE_PAGES);
 
-	si_meminfo(&si);
-	event.nr_avail_pages	= si.totalram;
+	event.nr_avail_pages	= totalram_pages;
 
 #ifdef CONFIG_SWAP
 	if (watch->config.event_attrs & VMEVENT_EATTR_NR_SWAP_PAGES) {
+		struct sysinfo si;
+
 		si_swapinfo(&si);
 		event.nr_swap_pages	= si.totalswap;
 	}
