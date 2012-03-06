@@ -32,12 +32,24 @@ int main(int argc, char *argv[])
 	printf("Physical pages: %ld\n", phys_pages);
 
 	config = (struct vmevent_config) {
-		.type			= VMEVENT_TYPE_SAMPLE | VMEVENT_TYPE_FREE_THRESHOLD,
-		.event_attrs		= VMEVENT_EATTR_NR_AVAIL_PAGES
-					| VMEVENT_EATTR_NR_FREE_PAGES
-					| VMEVENT_EATTR_NR_SWAP_PAGES,
 		.sample_period_ns	= 1000000000L,
-		.free_pages_threshold	= phys_pages,
+		.counter		= 4,
+		.attrs			= {
+			[0]			= {
+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
+				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
+				.value	= phys_pages,
+			},
+			[1]			= {
+				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
+			},
+			[2]			= {
+				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
+			},
+			[3]			= {
+				.type	= 0xffff, /* invalid */
+			},
+		},
 	};
 
 	fd = sys_vmevent_fd(&config);
@@ -47,9 +59,10 @@ int main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < 10; i++) {
-		char buffer[sizeof(struct vmevent_event) + 3 * sizeof(uint64_t)];
+		char buffer[sizeof(struct vmevent_event) + 4 * sizeof(struct vmevent_attr)];
 		struct vmevent_event *event;
 		int n = 0;
+		int idx;
 
 		pollfd.fd		= fd;
 		pollfd.events		= POLLIN;
@@ -68,16 +81,25 @@ int main(int argc, char *argv[])
 
 		event = (void *) buffer;
 
-		printf("VM event (%Lu bytes):\n", event->size);
+		printf("VM event (%u attributes):\n", event->counter);
 
-		if (event->attrs & VMEVENT_EATTR_NR_AVAIL_PAGES)
-			printf("  VMEVENT_EATTR_NR_AVAIL_PAGES: %Lu\n", event->attr_values[n++]);
+		for (idx = 0; idx < event->counter; idx++) {
+			struct vmevent_attr *attr = &event->attrs[idx];
 
-		if (event->attrs & VMEVENT_EATTR_NR_FREE_PAGES)
-			printf("  VMEVENT_EATTR_NR_FREE_PAGES : %Lu\n", event->attr_values[n++]);
-
-		if (event->attrs & VMEVENT_EATTR_NR_SWAP_PAGES)
-			printf("  VMEVENT_EATTR_NR_SWAP_PAGES : %Lu\n", event->attr_values[n++]);
+			switch (attr->type) {
+			case VMEVENT_ATTR_NR_AVAIL_PAGES:
+				printf("  VMEVENT_ATTR_NR_AVAIL_PAGES: %Lu\n", attr->value);
+				break;
+			case VMEVENT_ATTR_NR_FREE_PAGES:
+				printf("  VMEVENT_ATTR_NR_FREE_PAGES: %Lu\n", attr->value);
+				break;
+			case VMEVENT_ATTR_NR_SWAP_PAGES:
+				printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
+				break;
+			default:
+				printf("  Unknown attribute: %Lu\n", attr->value);
+			}
+		}
 	}
 	if (close(fd) < 0) {
 		perror("close failed");

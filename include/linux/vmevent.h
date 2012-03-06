@@ -3,17 +3,49 @@
 
 #include <linux/types.h>
 
+/*
+ * Types of memory attributes which could be monitored through vmevent API
+ */
 enum {
-	VMEVENT_TYPE_FREE_THRESHOLD	= 1ULL << 0,
-	VMEVENT_TYPE_SAMPLE		= 1ULL << 1,
+	VMEVENT_ATTR_NR_AVAIL_PAGES	= 1UL,
+	VMEVENT_ATTR_NR_FREE_PAGES	= 2UL,
+	VMEVENT_ATTR_NR_SWAP_PAGES	= 3UL,
+
+	VMEVENT_ATTR_MAX		/* non-ABI */
 };
 
+/*
+ * Attribute state bits for threshold
+ */
 enum {
-	VMEVENT_EATTR_NR_AVAIL_PAGES	= 1ULL << 0,
-	VMEVENT_EATTR_NR_FREE_PAGES	= 1ULL << 1,
-	VMEVENT_EATTR_NR_SWAP_PAGES	= 1ULL << 2,
+	/*
+	 * Sample value is less than user-specified value
+	 */
+	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
 };
 
+struct vmevent_attr {
+	/*
+	 * Value in pages delivered with pointed attribute
+	 */
+	__u64			value;
+
+	/*
+	 * Type of profiled attribute from VMEVENT_ATTR_XXX
+	 */
+	__u32			type;
+
+        /*
+	 * Bitmask of current attribute value (see VMEVENT_ATTR_STATE_XXX)
+	*/
+	__u32			state;
+};
+
+#define VMEVENT_CONFIG_MAX_ATTRS	32
+
+/*
+ * Configuration structure to get notifications and attributes values
+ */
 struct vmevent_config {
 	/*
 	 * Size of the struct for ABI extensibility.
@@ -21,35 +53,33 @@ struct vmevent_config {
 	__u32			size;
 
 	/*
-	 * Notification type bitmask
+	 * Counter of number monitored attributes
 	 */
-	__u64			type;
-
-	/*
-	 * Attributes that are delivered as part of events.
-	 */
-	__u64			event_attrs;
-
-	/*
-	 * Threshold of free pages in the system.
-	 */
-	__u32			free_pages_threshold;
+	__u32			counter;
 
 	/*
 	 * Sample period in nanoseconds
 	 */
 	__u64			sample_period_ns;
+
+	/*
+	 * Attributes that are monitored and delivered as part of events
+	 */
+	struct vmevent_attr	attrs[VMEVENT_CONFIG_MAX_ATTRS];
 };
 
 struct vmevent_event {
 	/*
-	 * Size of the struct for ABI extensibility.
+	 * Counter of attributes in this VM event
 	 */
-	__u32			size;
+	__u32			counter;
 
-	__u64			attrs;
+	__u32			padding;
 
-	__u64			attr_values[];
+	/*
+	 * Attributes for this VM event
+	 */
+	struct vmevent_attr	attrs[];
 };
 
 #endif /* _LINUX_VMEVENT_H */
