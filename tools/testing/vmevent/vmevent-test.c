@@ -1,7 +1,7 @@
 #include "../../../include/linux/vmevent.h"
 
 #if defined(__x86_64__)
-#include "../../../arch/x86/include/asm/unistd.h"
+#include "../../../arch/x86/include/generated/asm/unistd_64.h"
 #endif
 
 #include <stdint.h>
