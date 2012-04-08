@@ -20,7 +20,6 @@ WARNINGS += -Wstrict-prototypes
 WARNINGS += -Wdeclaration-after-statement
 
 CFLAGS  = -O3 -g -std=gnu99 $(WARNINGS)
-LDFLAGS = -lSDL
 
 PROGRAMS = vmevent-test
 
