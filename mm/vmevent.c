@@ -1,4 +1,5 @@
 #include <linux/anon_inodes.h>
+#include <linux/atomic.h>
 #include <linux/vmevent.h>
 #include <linux/syscalls.h>
 #include <linux/timer.h>
@@ -22,8 +23,7 @@ struct vmevent_watch_event {
 struct vmevent_watch {
 	struct vmevent_config		config;
 
-	struct mutex			mutex;
-	bool				pending;
+	atomic_t			pending;
 
 	/*
 	 * Attributes that are exported as part of delivered VM events.
@@ -99,16 +99,28 @@ static bool vmevent_match(struct vmevent_watch *watch)
 	return false;
 }
 
+/*
+ * This function is called from the timer context, which has the same
+ * guaranties as an interrupt handler: it can have only one execution
+ * thread (unlike bare softirq handler), so we don't need to worry
+ * about racing w/ ourselves.
+ *
+ * We also don't need to worry about several instances of timers
+ * accessing the same vmevent_watch, as we allocate vmevent_watch
+ * together w/ the timer instance in vmevent_fd(), so there is always
+ * one timer per vmevent_watch.
+ *
+ * All the above makes it possible to implement the lock-free logic,
+ * using just the atomic watch->pending variable.
+ */
 static void vmevent_sample(struct vmevent_watch *watch)
 {
 	int i;
 
+	if (atomic_read(&watch->pending))
+		return;
 	if (!vmevent_match(watch))
 		return;
-
-	mutex_lock(&watch->mutex);
-
-	watch->pending = true;
 
 	for (i = 0; i < watch->nr_attrs; i++) {
 		struct vmevent_attr *attr = &watch->sample_attrs[i];
@@ -116,7 +128,7 @@ static void vmevent_sample(struct vmevent_watch *watch)
 		attr->value = vmevent_sample_attr(watch, attr);
 	}
 
-	mutex_unlock(&watch->mutex);
+	atomic_set(&watch->pending, 1);
 }
 
 static void vmevent_timer_fn(unsigned long data)
@@ -125,7 +137,7 @@ static void vmevent_timer_fn(unsigned long data)
 
 	vmevent_sample(watch);
 
-	if (watch->pending)
+	if (atomic_read(&watch->pending))
 		wake_up(&watch->waitq);
 	mod_timer(&watch->timer, jiffies +
 			nsecs_to_jiffies64(watch->config.sample_period_ns));
@@ -148,12 +160,8 @@ static unsigned int vmevent_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &watch->waitq, wait);
 
-	mutex_lock(&watch->mutex);
-
-	if (watch->pending)
+	if (atomic_read(&watch->pending))
 		events |= POLLIN;
-
-	mutex_unlock(&watch->mutex);
 
 	return events;
 }
@@ -171,15 +179,13 @@ static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, l
 	if (count < size)
 		return -EINVAL;
 
-	mutex_lock(&watch->mutex);
-
-	if (!watch->pending)
-		goto out_unlock;
+	if (!atomic_read(&watch->pending))
+		goto out;
 
 	event = kmalloc(size, GFP_KERNEL);
 	if (!event) {
 		ret = -ENOMEM;
-		goto out_unlock;
+		goto out;
 	}
 
 	for (i = 0; i < watch->nr_attrs; i++) {
@@ -195,14 +201,10 @@ static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, l
 
 	ret = count;
 
-	watch->pending = false;
-
+	atomic_set(&watch->pending, 0);
 out_free:
 	kfree(event);
-
-out_unlock:
-	mutex_unlock(&watch->mutex);
-
+out:
 	return ret;
 }
 
@@ -230,8 +232,6 @@ static struct vmevent_watch *vmevent_watch_alloc(void)
 	watch = kzalloc(sizeof *watch, GFP_KERNEL);
 	if (!watch)
 		return NULL;
-
-	mutex_init(&watch->mutex);
 
 	init_waitqueue_head(&watch->waitq);
 
