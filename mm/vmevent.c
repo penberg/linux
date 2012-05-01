@@ -39,9 +39,11 @@ struct vmevent_watch {
 	wait_queue_head_t		waitq;
 };
 
-typedef u64 (*vmevent_attr_sample_fn)(struct vmevent_watch *watch);
+typedef u64 (*vmevent_attr_sample_fn)(struct vmevent_watch *watch,
+				      struct vmevent_attr *attr);
 
-static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch)
+static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch,
+				   struct vmevent_attr *attr)
 {
 #ifdef CONFIG_SWAP
 	struct sysinfo si;
@@ -54,12 +56,14 @@ static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch)
 #endif
 }
 
-static u64 vmevent_attr_free_pages(struct vmevent_watch *watch)
+static u64 vmevent_attr_free_pages(struct vmevent_watch *watch,
+				   struct vmevent_attr *attr)
 {
 	return global_page_state(NR_FREE_PAGES);
 }
 
-static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch)
+static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
+				    struct vmevent_attr *attr)
 {
 	return totalram_pages;
 }
@@ -74,7 +78,7 @@ static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr 
 {
 	vmevent_attr_sample_fn fn = attr_samplers[attr->type];
 
-	return fn(watch);
+	return fn(watch, attr);
 }
 
 static bool vmevent_match(struct vmevent_watch *watch)
