@@ -87,28 +87,39 @@ static bool vmevent_match(struct vmevent_watch *watch)
 		u32 state = attr->state;
 		bool attr_lt = state & VMEVENT_ATTR_STATE_VALUE_LT;
 		bool attr_gt = state & VMEVENT_ATTR_STATE_VALUE_GT;
+		bool attr_eq = state & VMEVENT_ATTR_STATE_VALUE_EQ;
 
 		if (!state)
 			continue;
 
-		if (attr_lt || attr_gt) {
+		if (attr_lt || attr_gt || attr_eq) {
 			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
 			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
 			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
 			u64 value = vmevent_sample_attr(watch, attr);
 			bool lt = value < attr->value;
 			bool gt = value > attr->value;
+			bool eq = value == attr->value;
 			bool was_lt = state & was_lt_mask;
 			bool was_gt = state & was_gt_mask;
+			bool was_eq = was_lt && was_gt;
 			bool ret = false;
 
-			if (((attr_lt && lt) || (attr_gt && gt)) && !one_shot)
+			if (((attr_lt && lt) || (attr_gt && gt) ||
+					(attr_eq && eq)) && !one_shot)
 				return true;
 
-			if (attr_lt && lt && was_lt) {
+			if (attr_eq && eq && was_eq) {
 				return false;
-			} else if (attr_gt && gt && was_gt) {
+			} else if (attr_lt && lt && was_lt && !was_eq) {
 				return false;
+			} else if (attr_gt && gt && was_gt && !was_eq) {
+				return false;
+			} else if (eq) {
+				state |= was_lt_mask;
+				state |= was_gt_mask;
+				if (attr_eq)
+					ret = true;
 			} else if (lt) {
 				state |= was_lt_mask;
 				state &= ~was_gt_mask;
@@ -119,9 +130,6 @@ static bool vmevent_match(struct vmevent_watch *watch)
 				state &= ~was_lt_mask;
 				if (attr_gt)
 					ret = true;
-			} else {
-				state &= ~was_lt_mask;
-				state &= ~was_gt_mask;
 			}
 
 			attr->state = state;

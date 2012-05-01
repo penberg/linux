@@ -27,9 +27,13 @@ enum {
 	 */
 	VMEVENT_ATTR_STATE_VALUE_GT	= (1UL << 1),
 	/*
+	 * Sample value is equal to user-specified value
+	 */
+	VMEVENT_ATTR_STATE_VALUE_EQ	= (1UL << 2),
+	/*
 	 * One-shot mode.
 	 */
-	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 2),
+	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 3),
 
 	/* Saved state, used internally by the kernel for one-shot mode. */
 	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
