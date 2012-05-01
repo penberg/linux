@@ -22,6 +22,19 @@ enum {
 	 * Sample value is less than user-specified value
 	 */
 	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
+	/*
+	 * Sample value is greater than user-specified value
+	 */
+	VMEVENT_ATTR_STATE_VALUE_GT	= (1UL << 1),
+	/*
+	 * One-shot mode.
+	 */
+	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 2),
+
+	/* Saved state, used internally by the kernel for one-shot mode. */
+	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
+	/* Saved state, used internally by the kernel for one-shot mode. */
+	__VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
 };
 
 struct vmevent_attr {

@@ -33,20 +33,32 @@ int main(int argc, char *argv[])
 
 	config = (struct vmevent_config) {
 		.sample_period_ns	= 1000000000L,
-		.counter		= 4,
+		.counter		= 6,
 		.attrs			= {
-			[0]			= {
+			{
 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
 				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
 				.value	= phys_pages,
 			},
-			[1]			= {
+			{
+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
+				.state	= VMEVENT_ATTR_STATE_VALUE_GT,
+				.value	= phys_pages,
+			},
+			{
+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
+				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
+					  VMEVENT_ATTR_STATE_VALUE_GT |
+					  VMEVENT_ATTR_STATE_ONE_SHOT,
+				.value	= phys_pages / 2,
+			},
+			{
 				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
 			},
-			[2]			= {
+			{
 				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
 			},
-			[3]			= {
+			{
 				.type	= 0xffff, /* invalid */
 			},
 		},
@@ -59,7 +71,7 @@ int main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < 10; i++) {
-		char buffer[sizeof(struct vmevent_event) + 4 * sizeof(struct vmevent_attr)];
+		char buffer[sizeof(struct vmevent_event) + config.counter * sizeof(struct vmevent_attr)];
 		struct vmevent_event *event;
 		int n = 0;
 		int idx;

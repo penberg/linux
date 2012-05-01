@@ -1,5 +1,6 @@
 #include <linux/anon_inodes.h>
 #include <linux/atomic.h>
+#include <linux/compiler.h>
 #include <linux/vmevent.h>
 #include <linux/syscalls.h>
 #include <linux/timer.h>
@@ -83,16 +84,48 @@ static bool vmevent_match(struct vmevent_watch *watch)
 
 	for (i = 0; i < config->counter; i++) {
 		struct vmevent_attr *attr = &config->attrs[i];
-		u64 value;
+		u32 state = attr->state;
+		bool attr_lt = state & VMEVENT_ATTR_STATE_VALUE_LT;
+		bool attr_gt = state & VMEVENT_ATTR_STATE_VALUE_GT;
 
-		if (!attr->state)
+		if (!state)
 			continue;
 
-		value = vmevent_sample_attr(watch, attr);
+		if (attr_lt || attr_gt) {
+			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
+			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
+			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
+			u64 value = vmevent_sample_attr(watch, attr);
+			bool lt = value < attr->value;
+			bool gt = value > attr->value;
+			bool was_lt = state & was_lt_mask;
+			bool was_gt = state & was_gt_mask;
+			bool ret = false;
 
-		if (attr->state & VMEVENT_ATTR_STATE_VALUE_LT) {
-			if (value < attr->value)
+			if (((attr_lt && lt) || (attr_gt && gt)) && !one_shot)
 				return true;
+
+			if (attr_lt && lt && was_lt) {
+				return false;
+			} else if (attr_gt && gt && was_gt) {
+				return false;
+			} else if (lt) {
+				state |= was_lt_mask;
+				state &= ~was_gt_mask;
+				if (attr_lt)
+					ret = true;
+			} else if (gt) {
+				state |= was_gt_mask;
+				state &= ~was_lt_mask;
+				if (attr_gt)
+					ret = true;
+			} else {
+				state &= ~was_lt_mask;
+				state &= ~was_gt_mask;
+			}
+
+			attr->state = state;
+			return ret;
 		}
 	}
 
