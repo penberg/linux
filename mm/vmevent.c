@@ -310,7 +310,10 @@ static int vmevent_setup_watch(struct vmevent_watch *watch)
 
 		attrs = new;
 
-		attrs[nr++].type = attr->type;
+		attrs[nr].type = attr->type;
+		attrs[nr].value = 0;
+		attrs[nr].state = 0;
+		nr++;
 	}
 
 	watch->sample_attrs	= attrs;
