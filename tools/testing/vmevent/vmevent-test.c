@@ -3,6 +3,9 @@
 #if defined(__x86_64__)
 #include "../../../arch/x86/include/generated/asm/unistd_64.h"
 #endif
+#if defined(__arm__)
+#include "../../../arch/arm/include/asm/unistd.h"
+#endif
 
 #include <stdint.h>
 #include <stdlib.h>
