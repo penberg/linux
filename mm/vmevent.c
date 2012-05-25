@@ -31,6 +31,7 @@ struct vmevent_watch {
 	 */
 	unsigned long			nr_attrs;
 	struct vmevent_attr		*sample_attrs;
+	struct vmevent_attr		*config_attrs[VMEVENT_CONFIG_MAX_ATTRS];
 
 	/* sampling */
 	struct timer_list		timer;
@@ -170,7 +171,8 @@ static void vmevent_sample(struct vmevent_watch *watch)
 	for (i = 0; i < watch->nr_attrs; i++) {
 		struct vmevent_attr *attr = &watch->sample_attrs[i];
 
-		attr->value = vmevent_sample_attr(watch, attr);
+		attr->value = vmevent_sample_attr(watch,
+						  watch->config_attrs[i]);
 	}
 
 	atomic_set(&watch->pending, 1);
@@ -313,6 +315,9 @@ static int vmevent_setup_watch(struct vmevent_watch *watch)
 		attrs[nr].type = attr->type;
 		attrs[nr].value = 0;
 		attrs[nr].state = 0;
+
+		watch->config_attrs[nr] = attr;
+
 		nr++;
 	}
 
