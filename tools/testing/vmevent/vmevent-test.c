@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
 				.state	= VMEVENT_ATTR_STATE_VALUE_LT |
 					  VMEVENT_ATTR_STATE_VALUE_GT |
-					  VMEVENT_ATTR_STATE_ONE_SHOT,
+					  VMEVENT_ATTR_STATE_EDGE_TRIGGER,
 				.value	= phys_pages / 2,
 			},
 			{

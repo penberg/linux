@@ -31,9 +31,9 @@ enum {
 	 */
 	VMEVENT_ATTR_STATE_VALUE_EQ	= (1UL << 2),
 	/*
-	 * One-shot mode.
+	 * Edge trigger mode.
 	 */
-	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 3),
+	VMEVENT_ATTR_STATE_EDGE_TRIGGER	= (1UL << 3),
 
 	__VMEVENT_ATTR_STATE_INTERNAL	= (1UL << 30) |
 					  (1UL << 31),

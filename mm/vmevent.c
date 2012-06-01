@@ -103,7 +103,7 @@ static bool vmevent_match(struct vmevent_watch *watch)
 			continue;
 
 		if (attr_lt || attr_gt || attr_eq) {
-			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
+			bool edge = state & VMEVENT_ATTR_STATE_EDGE_TRIGGER;
 			u32 was_lt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_LT;
 			u32 was_gt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_GT;
 			u64 value = vmevent_sample_attr(watch, attr);
@@ -116,7 +116,7 @@ static bool vmevent_match(struct vmevent_watch *watch)
 			bool ret = false;
 
 			if (((attr_lt && lt) || (attr_gt && gt) ||
-					(attr_eq && eq)) && !one_shot)
+					(attr_eq && eq)) && !edge)
 				return true;
 
 			if (attr_eq && eq && was_eq) {
