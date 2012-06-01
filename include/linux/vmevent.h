@@ -35,10 +35,8 @@ enum {
 	 */
 	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 3),
 
-	/* Saved state, used internally by the kernel for one-shot mode. */
-	__VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
-	/* Saved state, used internally by the kernel for one-shot mode. */
-	__VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
+	__VMEVENT_ATTR_STATE_INTERNAL	= (1UL << 30) |
+					  (1UL << 31),
 };
 
 struct vmevent_attr {

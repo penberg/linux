@@ -82,6 +82,11 @@ static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr 
 	return fn(watch, attr);
 }
 
+enum {
+	VMEVENT_ATTR_STATE_VALUE_WAS_LT	= (1UL << 30),
+	VMEVENT_ATTR_STATE_VALUE_WAS_GT	= (1UL << 31),
+};
+
 static bool vmevent_match(struct vmevent_watch *watch)
 {
 	struct vmevent_config *config = &watch->config;
@@ -99,8 +104,8 @@ static bool vmevent_match(struct vmevent_watch *watch)
 
 		if (attr_lt || attr_gt || attr_eq) {
 			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
-			u32 was_lt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_LT;
-			u32 was_gt_mask = __VMEVENT_ATTR_STATE_VALUE_WAS_GT;
+			u32 was_lt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_LT;
+			u32 was_gt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_GT;
 			u64 value = vmevent_sample_attr(watch, attr);
 			bool lt = value < attr->value;
 			bool gt = value > attr->value;
