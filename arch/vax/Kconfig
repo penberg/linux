@@ -34,17 +34,6 @@ config KCORE_ELF
 	bool
 	default y
 
-# Force these to zero to avoid warnings in drivers/video/Kconfig (rather
-# than pull in I2C config menus)
-config I2C
-	bool
-	default n
-
-config I2C_ALGOBIT
-	bool
-	default n
-# End I2C placeholders
-
 config GENERIC_CALIBRATE_DELAY
 	bool
 	default y
