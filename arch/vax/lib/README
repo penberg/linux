@@ -1,0 +1,11 @@
+This is pretty much all temporary. Stuff that isnt will need to be
+rewritten.
+
+# items lifted from linux tree
+#  linux/lib/*.c 
+#  	- headers hacked mercilessly until they compiled.
+#	- asm-string.h is a stub (from linux/include/asm-alpha/string.h)
+#	- printk is a chunk copied from linux/arch/alpha/boot/main.c
+#	- stdarg.h is from gcc 2.7.2.3 
+# 	- console.c is from the test vilo program.
+

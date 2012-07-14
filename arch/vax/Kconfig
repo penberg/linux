@@ -1,0 +1,298 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+
+mainmenu "Linux Kernel Configuration"
+
+config VAX
+	bool
+	default y
+	help
+	  Select this option, if you want to run the kernel on 
+	  one of Digital's VAX line of computers.  You will need
+	  a VAX compiler (see http://www.linux-vax.org).
+
+config MMU
+	bool
+	default y
+
+config UID16
+	bool
+	default y
+
+config RWSEM_GENERIC_SPINLOCK
+	bool
+	default y
+
+config RWSEM_XCHGADD_ALGORITHM
+	bool
+	default n
+
+config ELF_KERNEL
+	bool
+	default y
+
+config KCORE_ELF
+	bool
+	default y
+
+# Force these to zero to avoid warnings in drivers/video/Kconfig (rather
+# than pull in I2C config menus)
+config I2C
+	bool
+	default n
+
+config I2C_ALGOBIT
+	bool
+	default n
+# End I2C placeholders
+
+config GENERIC_CALIBRATE_DELAY
+	bool
+	default y
+
+config PREEMPT
+	bool "Preemptible kernel (currently broken)"
+	default n
+
+config CMDLINE
+	string "Kernel command line"
+	default "root=/dev/nfs ip=bootp rw debug"
+	help
+	  This is the command line the booting kernel will get.
+
+config EARLY_PRINTK
+	bool
+	default y
+
+menu "VAX CPU types"
+
+config CPU_KA630
+	bool "Support for KA630 (MicroVAX II)"
+	default n
+
+config CPU_KA640
+	bool "Support for KA640"
+	default n
+
+config CPU_KA650
+	bool "Support for KA650/KA655"
+	default n
+
+config CPU_KA660
+	bool "Support for KA660"
+	default n
+
+config CPU_KA410
+	bool "Support for KA410"
+	default n
+
+config CPU_KA41
+	bool "Support for KA41 (MicroVAX 3100 Model 10)"
+	default n
+
+config CPU_KA42
+	bool "Support for KA42 (VAXstation 3100 Model 38)"
+	default n
+
+config CPU_KA43
+	bool "Support for KA43 (VAXstation 3100 Model 76)"
+	default n
+
+config CPU_KA46
+	bool "Support for KA46 (VAXstation 4000 Model 60)"
+	default n
+
+config CPU_KA48
+	bool "Support for KA48 (VAXstation 4000 VLC)"
+	default n
+
+config CPU_KA52
+	bool "Support for KA52 (VAXstation 4000 Model 100A)"
+	select CONS_PREVM_KA52
+	default n
+
+config CPU_KA55
+	bool "Support for KA55"
+	default n
+
+config CPU_KA49
+	bool "Support for KA49 (VAXstation 4000/90)"
+	default n
+
+config CPU_KA62
+	bool "Support for KA62 (VAXstation 6000/3x0)"
+	select SERIAL_IPR
+	default n
+
+config CPU_VXT
+	bool "Support for VXT"
+	default n
+
+config CONS_PREVM_KA52
+	bool
+	default n
+endmenu
+
+source "init/Kconfig"
+
+# It's needed for FB console, but if we compile in VT support,
+# it currently Oopses. - 20031010 jbglaw
+#
+source "drivers/input/Kconfig"
+#
+source "drivers/char/Kconfig"
+#
+source "drivers/video/Kconfig"
+
+source "fs/Kconfig.binfmt"
+
+menu "VAX Bus support"
+
+config QBUS
+	bool "Support for Q-bus"
+	default n
+
+config VSBUS
+	bool "Support for VAXstation bus"
+	default n
+
+endmenu
+
+source "drivers/block/Kconfig"
+
+source "net/Kconfig"
+
+if NETDEVICES
+menu "VAX Network device support"
+
+config VAX_LANCE
+	bool "LANCE ethernet controller support"
+	select VSBUS
+	default n
+
+config VAX_SGEC
+	bool "SGEC ethernet controller support (EXPERIMENTAL)"
+	select VSBUS
+	select VAX_LANCE
+	default n
+
+config DELQA
+	bool "DELQA/DEQNA Q-bus ethernet controller support"
+	select QBUS
+	default n
+
+endmenu
+endif
+
+
+source "drivers/scsi/Kconfig"
+
+if SCSI
+
+comment "VAX SCSI low-level drivers"
+
+config SCSI_VAX_5380
+	bool "NCR53C80 Scsi Driver (used in VAXstation/MicroVAX 3100 family)"
+	default n
+
+config SCSI_VAX_53C94
+	bool "NCR53C94 Scsi Driver (used in VAXstation 4000 family) (NOT WORKING)"
+	default n
+
+endif
+
+source "fs/Kconfig"
+
+source "drivers/base/Kconfig"
+
+menu "VAX character devices"
+
+config SERIAL
+	bool "Serial port support"
+	default y
+
+if SERIAL
+
+config DZ
+	bool "DZ11 Serial Support"
+	default n
+
+config SERIAL_IPR
+	bool "CPU register-based Serial Console Support"
+	default y
+	select SERIAL_CORE
+
+config SERIAL_CONSOLE
+	bool "Support for console on serial port"
+	default y
+	select SERIAL_CORE_CONSOLE
+
+endif
+
+endmenu
+
+
+menu "Kernel hacking"
+
+config DEBUG_KERNEL
+	bool "Kernel debugging"
+	default y
+
+if DEBUG_KERNEL
+config DEBUG_SLAB
+	bool "SLAB allocator debugging"
+	default y
+
+config DEBUG_SPINLOCK
+	bool "Spinlock debugging"
+	default y
+
+config DEBUG_BUGVERBOSE
+	bool "Verbose BUG reporting"
+	default y
+
+config VAX_DIAG_LED
+	tristate "Support for accessing the diagnostic LEDs"
+	default n
+	depends VAX
+	help
+	  This driver is a hack and will probably go away soon. It's
+	  main purpose is to aid me towards rewriting the dz11 driver
+	  to be more modular...
+
+#
+# The next two options do basically have only one user. After his
+# userland is fixed, they can go away (cf. ./arch/vax/kernel/syscall.c).
+#
+config DEBUG_VAX_CHECK_CHMx_ARGS
+	bool "Check number of syscall arguments"
+	default y
+	depends VAX
+	help
+	  This option allows you to switch off checking the number of
+	  supplied arguments to syscalls. That is, you'd call a syscall
+	  with less atguments than needed unrecognized if you switch off
+	  this option. Only a moron would do that, or somebody who's
+	  on the way to fix his ABI code...
+
+config DEBUG_VAX_CHECK_CHMx_ARGS_ABORT
+	bool "Abort syscall with wrong number of arguments"
+	default y
+	depends DEBUG_VAX_CHECK_CHMx_ARGS
+	help
+	  With this option enabled, you'll not only get a warning, but
+	  the whole system call will be aborted before it can cause
+	  any harm. That's a good think, so keep it enabled!
+endif
+
+endmenu
+
+source "security/Kconfig"
+source "crypto/Kconfig"
+source "drivers/media/Kconfig"
+source "sound/Kconfig"
+source "lib/Kconfig"
+source "lib/Kconfig.debug"
+
