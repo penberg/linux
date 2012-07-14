@@ -2,9 +2,6 @@
 # For a description of the syntax of this configuration file,
 # see Documentation/kbuild/kconfig-language.txt.
 #
-
-mainmenu "Linux Kernel Configuration"
-
 config VAX
 	bool
 	default y
@@ -256,8 +253,8 @@ config DEBUG_BUGVERBOSE
 config VAX_DIAG_LED
 	tristate "Support for accessing the diagnostic LEDs"
 	default n
-	depends VAX
-	help
+	depends on VAX
+	---help---
 	  This driver is a hack and will probably go away soon. It's
 	  main purpose is to aid me towards rewriting the dz11 driver
 	  to be more modular...
@@ -269,8 +266,8 @@ config VAX_DIAG_LED
 config DEBUG_VAX_CHECK_CHMx_ARGS
 	bool "Check number of syscall arguments"
 	default y
-	depends VAX
-	help
+	depends on VAX
+	---help---
 	  This option allows you to switch off checking the number of
 	  supplied arguments to syscalls. That is, you'd call a syscall
 	  with less atguments than needed unrecognized if you switch off
@@ -280,8 +277,8 @@ config DEBUG_VAX_CHECK_CHMx_ARGS
 config DEBUG_VAX_CHECK_CHMx_ARGS_ABORT
 	bool "Abort syscall with wrong number of arguments"
 	default y
-	depends DEBUG_VAX_CHECK_CHMx_ARGS
-	help
+	depends on DEBUG_VAX_CHECK_CHMx_ARGS
+	---help---
 	  With this option enabled, you'll not only get a warning, but
 	  the whole system call will be aborted before it can cause
 	  any harm. That's a good think, so keep it enabled!
