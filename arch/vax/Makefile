@@ -12,7 +12,7 @@
 # Copyright (C) 1994 by Linus Torvalds
 #
 
-CROSS_COMPILE := vax-dec-linux-
+CROSS_COMPILE := vax-linux-
 
 LDFLAGS_BLOB := --format binary --oformat elf32-vax
 
