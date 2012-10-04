@@ -11,16 +11,6 @@
 #include <linux/swap.h>
 #undef nr_swap_pages /* This is defined to a constant for SWAP=n case */
 
-#define VMEVENT_MAX_FREE_THRESHOD	100
-
-#define VMEVENT_MAX_EATTR_ATTRS	64
-
-struct vmevent_watch_event {
-	u64				nr_avail_pages;
-	u64				nr_free_pages;
-	u64				nr_swap_pages;
-};
-
 struct vmevent_watch {
 	struct vmevent_config		config;
 
