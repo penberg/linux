@@ -133,18 +133,22 @@ static bool vmevent_match_attr(struct vmevent_attr *attr, u64 value)
 static bool vmevent_match(struct vmevent_watch *watch)
 {
 	struct vmevent_config *config = &watch->config;
+	bool ret = 0;
 	int i;
 
 	for (i = 0; i < config->counter; i++) {
 		struct vmevent_attr *attr = &config->attrs[i];
+		struct vmevent_attr *samp = &watch->sample_attrs[i];
 		u64 val;
 
 		val = vmevent_sample_attr(watch, attr);
-		if (vmevent_match_attr(attr, val))
-			return true;
+		if (!ret && vmevent_match_attr(attr, val))
+			ret = 1;
+
+		samp->value = val;
 	}
 
-	return false;
+	return ret;
 }
 
 /*
@@ -161,19 +165,10 @@ static bool vmevent_match(struct vmevent_watch *watch)
  */
 static void vmevent_sample(struct vmevent_watch *watch)
 {
-	int i;
-
 	if (atomic_read(&watch->pending))
 		return;
 	if (!vmevent_match(watch))
 		return;
-
-	for (i = 0; i < watch->nr_attrs; i++) {
-		struct vmevent_attr *attr = &watch->sample_attrs[i];
-
-		attr->value = vmevent_sample_attr(watch,
-						  watch->config_attrs[i]);
-	}
 
 	atomic_set(&watch->pending, 1);
 }
