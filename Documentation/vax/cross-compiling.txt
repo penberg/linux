@@ -1,0 +1,48 @@
+Date: Sat, 14 Jul 2012 19:09:23 +0200
+From: Jan-Benedict Glaw <jbglaw@lug-owl.de>
+To: Pekka Enberg <penberg@kernel.org>
+
+On Sat, 2012-07-14 19:46:16 +0300, Pekka Enberg <penberg@kernel.org> wrote:
+> Any hints on how to build a cross compiler? I have binutils built but
+> GCC 4.7.1 fails with some mundane error complaining that "pthread.h"
+> is missing...
+
+There are three options IMHO.
+
+  (1) Use the very aged cross-compiler we used to have somewhere at
+      linux-vax.org (notice the difference!) around. Though it is
+      from the stone age (or even from before), it used to get its
+      job done.
+
+  (2) Fetch the source RPMs from Maciej's directory at linux-mips.org.
+      This one is newer then (1), but not like gcc HEAD. He has been
+      hacking that one and it should plain work. (As a bonus, it's
+      newer than (1) and quite similar wrt. the VAX bits to gcc HEAD.)
+      Find the SRPMs at
+      ftp://ftp.linux-mips.org/pub/linux/mips/people/macro/SRPMS/
+
+  (3) Use a current snapshot of binutils and GCC. Since some
+      days/weeks, I've again started to build gcc HEAD for the VAX
+      target. Since I'm not yet again *using* the generated output, I
+      cannot tell about the generated code's quality. However, at
+      least it *builds* and doesn't crash on some simple test
+      compilations.
+
+If you just want a working solution, compile Maciej's code. However,
+it would help the most if current GCC gets testing. You can build a
+binutils and gcc checkout by this
+
+mkdir -p ~/foo/binutils ~/foo/gcc ~/installdir
+cd ~/foo/binutils
+....../binutils/configure --target=vax-linux --prefix=~/foo/installdir
+make all-binutils all-ld all-gas all-gprof \
+        install-binutils install-ld install-gas install-gprof
+
+export PATH=$PATH:~/foo/installdir
+hash -r
+cd ~/foo/gcc
+....../gcc/configure --target=vax-linux --prefix=~/installdir --enable-languages=c --disable-threads
+make all-gcc install-gcc
+
+That gcc doesn't have the ability to build userland, but it should be
+fine for kernel compilation. (Modulo bugs, of course.)
