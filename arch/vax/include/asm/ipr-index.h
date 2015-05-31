@@ -44,4 +44,41 @@
 #define IPR_VTBIA	147	/* vector TB invalidate all */
 #define IPR_VSAR	148	/* vector state address register */
 
+/*
+ * System identification register (SID) and system-type register (SYS_TYPE)
+ * assignments as specified in Table 8.2 of the VAX architecture reference
+ * manual.
+ */
+#define SID_VAX_11_78X		1		/* VAX-11/780; VAX-11/782; VAX-11/785 */
+#define SID_VAX_11_750		2		/* VAX-11/750 */
+#define SID_VAX_11_730		3		/* VAX-11/730 */
+#define SID_VAX_86X0		4		/* VAX 8600; VAX 8650 */
+#define SID_VAX_82X0_83X0	5		/* VAX 8200, 8300; VAX 8250, 8350; VS8000 */
+#define SID_VAX_8700_88X0_8500	6		/* VAX 8700, 8800, 8810, 8820-N; VAX 8500 */
+#define SID_MICROVAX_I		7		/* MicroVAX-I */
+#define SID_MICROVAX_II_CHIP	8
+#  define SYS_TYPE_MICROVAX_II		1	/* MicroVAX II */
+#  define SYS_TYPE_MICROVAX_2000	2	/* MicroVAX 2000; VAXstation 2000; */
+						/* PC/LAN SERVER 2000; MicroVAX Information */
+						/* Processor Module */
+#  define SYS_TYPE_VAXTERM		5	/* VAXterm */
+#  define SYS_TYPE_VAX_9000_CONSOLE	6	/* VAX 9000 Console */
+#define SID_CVAX_CHIP		10
+#  define SYS_TYPE_MICROVAX_3X00	1	/* MicroVAX 3500 or 3600; VAXserver 3500 or 3600; */
+						/* VAXstation 3200 or 3500; MicroVAX 3300, 3400; */
+						/* VAXserver 3300, 3400; MicroVAX 3800, 3900; */
+						/* VAXserver 3800, 3900 */
+#  define SYS_TYPE_VAX_62N0		2	/* VAX 62n0; VAX Fileserver 62n0; VAX 63n0; */
+						/* VAX Fileserver 63n0 */
+#  define SYS_TYPE_VAXSTATION_35X0	3	/* VAXstation 3520, 3540 */
+#  define SYS_TYPE_VAXSTATION_3100	4	/* VAXstation 3100 */
+#  define SYS_TYPE_VAXSTATION_3000FT	7	/* VAX 3000FT */
+#define SID_REX520_CHIP		11
+#  define SYS_TYPE_VAX_4000_300		1	/* VAX 4000-300 */
+#  define SYS_TYPE_VAX_6000_4N0		2	/* VAX 6000-4n0 */
+#define SID_VAX_9000		14
+#define SID_RT_UVAX		16
+#  define SYS_TYPE_RTVAX_1000		1	/* rtVAX 1000 */
+#define SID_VAX_88X0		17		/* VAX 8820, 8830, 8840 */
+
 #endif /* _ASM_VAX_IPR_INDEX_H */
