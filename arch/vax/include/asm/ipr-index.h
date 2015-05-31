@@ -17,6 +17,7 @@
 #define IPR_P1LR	11	/* P1 length register */
 #define IPR_SBR		12	/* system base register */
 #define IPR_SLR		13	/* system limit register */
+#define IPR_CPUID	14	/* CPU identification */
 #define IPR_PCBB	16	/* process control block base */
 #define IPR_SCBB	17	/* system control block base */
 #define IPR_IPL		18	/* interrupt priority level */
@@ -37,5 +38,10 @@
 #define IPR_PMR		61	/* performance monitor enable */
 #define IPR_SID		62	/* system identification */
 #define IPR_TBCHK	63	/* translation buffer check */
+#define IPR_VPSR	144	/* vector processor status register */
+#define IPR_VAER	145	/* vector arithmetic exception register */
+#define IPR_VMAC	146	/* vector memory activity check */
+#define IPR_VTBIA	147	/* vector TB invalidate all */
+#define IPR_VSAR	148	/* vector state address register */
 
 #endif /* _ASM_VAX_IPR_INDEX_H */
