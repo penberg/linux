@@ -5,24 +5,25 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdint.h>
 
 struct vax_boot_imgdesc {
-	unsigned short arch_type; /* 0x18 for VAX */
-	unsigned char check1;
-	unsigned char check2;    /* = 0xff ^ (0x18+check1) */
-	unsigned long ignored;
-	unsigned long blk_count;
-	unsigned long load_offset;
-	unsigned long start_offset;
-	unsigned long checksum; /* blk_count + load_offset + start_offset */
+	uint16_t arch_type; /* 0x18 for VAX */
+	uint8_t check1;
+	uint8_t check2;    /* = 0xff ^ (0x18+check1) */
+	uint32_t ignored;
+	uint32_t blk_count;
+	uint32_t load_offset;
+	uint32_t start_offset;
+	uint32_t checksum; /* blk_count + load_offset + start_offset */
 };
 
 struct vax_bootblock_header {
-	unsigned short ignored1;
-	unsigned char imgdesc_offset; /* offset (in words) to imgdesc */
-	unsigned char must_be_1;
-	unsigned short lbn_hi;
-	unsigned short lbn_lo;
+	uint16_t ignored1;
+	uint8_t imgdesc_offset; /* offset (in words) to imgdesc */
+	uint8_t must_be_1;
+	uint16_t lbn_hi;
+	uint16_t lbn_lo;
 	struct vax_boot_imgdesc imgdesc;
 };
 
@@ -31,7 +32,7 @@ int main(int argc, char **argv)
 {
 	union bootblock {
 		struct vax_bootblock_header hdr;
-		unsigned char data[512];
+		uint8_t data[512];
 	} block;
 
 	struct stat kernelstat;
