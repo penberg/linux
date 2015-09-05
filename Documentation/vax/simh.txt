@@ -1,0 +1,62 @@
+Linux/VAX on SIMH
+=================
+
+Download SIMH from:
+
+  http://simh.trailing-edge.com/
+
+and build it with:
+
+  mkdir simh
+  cd simh
+  unzip -a ../simhv210-4.zip
+  mkdir BIN
+  make USE_NETWORK=1 BIN/vax
+
+Then install SIMH to your home directory:
+
+  mkdir -p $HOME/simh/vax/bin
+  mkdir -p $HOME/simh/vax/data
+  cp BIN/vax $HOME/simh/vax/bin
+  cp VAX/ka655.bin $HOME/simh/vax/data
+
+Create a vax.ini file in $HOME/simh/vax/bin directory:
+
+  load -r <home directory>/simh/vax/data/ka655x.bin
+  set rq0 ra92
+  attach rq0 <linux source tree>/vmlinux.dsk
+  att xq dummy0
+  boot cpu
+
+Finally, build Linux/VAX a "vmlinux.dsk" disk image:
+
+  export ARCH=vax
+  export CROSS_COMPILE=vax-linux-
+  make vmlinux.bin
+  arch/vax/tools/mkdisk
+
+And then start it up under SIMH:
+
+  $HOME/simh/vax/bin/vax
+
+You are greeted with:
+
+  VAX simulator V3.9-0
+  libpcap version 1.7.3
+  Eth: pcap_open_live error - dummy0: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: No such device
+  ../simh/vax/bin/vax.ini> att xq dummy0
+  File open error
+
+  KA655-B V5.3, VMB 2.7
+  Performing normal system tests.
+  40..39..38..37..36..35..34..33..32..31..30..29..28..27..26..25..
+  24..23..22..21..20..19..18..17..16..15..14..13..12..11..10..09..
+  08..07..06..05..04..03..
+  Tests completed.
+  >>>
+
+To boot to Linux from the VAX console, type:
+
+  >>>boot dua0:
+
+Happy hacking!
