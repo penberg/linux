@@ -9,6 +9,8 @@
 #define PAGE_SIZE	(_AC(1,UL) << PAGE_SHIFT)
 #define PAGE_MASK	(~(PAGE_SIZE-1))
 
+#define PAGE_OFFSET	0x80000000
+
 #ifdef __KERNEL__
 
 #ifndef __ASSEMBLY__
@@ -22,8 +24,6 @@
 
 /* align addr on a size boundary - adjust address up if needed */
 #define _ALIGN(addr, size)	_ALIGN_UP(addr, size)
-
-#define PAGE_OFFSET	0x80000000
 
 #define clear_page(pgaddr)			memset((pgaddr), 0, PAGE_SIZE)
 #define copy_page(to, from)			memcpy((to), (from), PAGE_SIZE)
