@@ -26,5 +26,5 @@ start:
 	/* Disable interrupts: */
 	mtpr	$31, $IPR_IPL
 
-	calls	$0, start_kernel
+	calls	$0, vax_start_kernel
 	halt

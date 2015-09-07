@@ -1,6 +1,8 @@
-#include <linux/init.h>
+#include <linux/start_kernel.h>
 #include <linux/seq_file.h>
+#include <linux/init.h>
 
+#include <asm/console.h>
 #include <asm/setup.h>
 
 extern char command_line[256];
@@ -44,4 +46,11 @@ void __init setup_arch(char **cmdline_p)
 	memcpy(boot_command_line, command_line, 256);
 
 	*cmdline_p = boot_command_line;
+}
+
+void __init vax_start_kernel(void)
+{
+	vax_puts("Linux/VAX booting ...");
+
+	start_kernel();
 }
