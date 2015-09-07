@@ -54,7 +54,7 @@ void __init setup_arch(char **cmdline_p)
 
 static void *kernel_phys_start(void)
 {
-	return (void*) CONFIG_KERNEL_START-PAGE_OFFSET;
+	return (void*) __pa(CONFIG_KERNEL_START);
 }
 
 static size_t kernel_size(void)
