@@ -104,5 +104,7 @@ void __init vax_start_kernel(void)
 {
 	vax_puts("Linux/VAX booting ...");
 
+	register_console(&vax_console);
+
 	start_kernel();
 }
