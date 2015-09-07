@@ -2,6 +2,7 @@
 #include <linux/linkage.h>
 #include <asm/asm-offsets.h>
 #include <asm/ipr-index.h>
+#include <asm/page.h>
 
 	.extern start_kernel
 
@@ -44,6 +45,18 @@ start:
 	jmp	(%r0)
 
 relocated_kernel:
+	/*
+	 * Enable memory mapping:
+	 */
+	addl2	$PAGE_OFFSET, %sp		/* Fix %sp and %fp to be virtual addresses */
+	addl2	$PAGE_OFFSET, %fp
+	movab	memory_mapping_enabled, %r0	/* Fix jump target to be a virtual address */
+	addl2	$PAGE_OFFSET, %r0
+	mtpr	$IPR_TBIA, $IPR_TBIA		/* Flush TLB */
+	mtpr	$1, $IPR_MAPEN			/* Enable mapping */
+	jmp	(%r0)
+
+memory_mapping_enabled:
 	/* Start the kernel: */
 	calls	$0, vax_start_kernel
 
