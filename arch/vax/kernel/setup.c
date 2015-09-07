@@ -2,8 +2,11 @@
 #include <linux/seq_file.h>
 #include <linux/init.h>
 
+#include <asm/pgtable-bits.h>
+#include <asm/sections.h>
 #include <asm/console.h>
 #include <asm/setup.h>
+#include <asm/rpb.h>
 #include <asm/io.h>
 
 extern char command_line[256];
@@ -49,6 +52,16 @@ void __init setup_arch(char **cmdline_p)
 	*cmdline_p = boot_command_line;
 }
 
+static void *kernel_phys_start(void)
+{
+	return (void*) CONFIG_KERNEL_START-PAGE_OFFSET;
+}
+
+static size_t kernel_size(void)
+{
+	return _end - _stext;
+}
+
 /*
  * Relocate kernel image to higher up in the memory and return address to the
  * start of the new image.
@@ -58,8 +71,8 @@ void *__init vax_relocate_kernel(void *start, void *end)
 	size_t size;
 	void *dest;
 
-	dest	= (void*) CONFIG_KERNEL_START-PAGE_OFFSET;
-	size	= end-start;
+	dest	= kernel_phys_start();
+	size	= kernel_size();
 
 	BUG_ON(dest < start);
 
@@ -68,6 +81,23 @@ void *__init vax_relocate_kernel(void *start, void *end)
 	memmove(dest, start, size);
 
 	return dest;
+}
+
+void __init vax_setup_system_space(struct rpb_struct *rpb)
+{
+	unsigned long num_pfns = rpb->l_pfncnt;
+	unsigned long pfn, *pgtable;
+
+	pgtable = kernel_phys_start() + kernel_size();
+
+	vax_printf("Mapping %lu pages to system space in page table at %lu ...\n", num_pfns, (unsigned long) pgtable);
+
+	for (pfn = 0; pfn < num_pfns; pfn++) {
+		pgtable[pfn] = _PAGE_VALID | _PAGE_KW | pfn;
+	}
+
+	mtpr((unsigned long) pgtable, IPR_SBR);
+	mtpr(num_pfns, IPR_SLR);
 }
 
 void __init vax_start_kernel(void)
