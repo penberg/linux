@@ -2,27 +2,32 @@
 #define _ASM_VAX_PGTABLE_BITS_H
 
 /*
- * FIXME: needs to be adapted for VAX.
+ * PTE valid bit <31>:
  */
+#define _PAGE_VALID	(1UL << 31)
 
-#define _PAGE_ACCESSED			(1<<5)	/* implemented in software */
-#define _PAGE_READ			(1<<6)	/* implemented in software */
-#define _PAGE_WRITE			(1<<7)	/* implemented in software */
-#define _PAGE_PRESENT			(1<<9)	/* implemented in software */
-#define _PAGE_MODIFIED			(1<<10)	/* implemented in software */
+/*
+ * PTE protection field <30:27>:
+ */
+#define _PAGE_KW	(2UL << 27)
+#define _PAGE_PROT_MASK	(15UL << 27)
 
-#define _PAGE_GLOBAL			(1<<0)
-#define _PAGE_VALID			(1<<1)
-#define _PAGE_SILENT_READ		(1<<1)	/* synonym */
-#define _PAGE_DIRTY			(1<<2)	/* Write bit */
-#define _PAGE_SILENT_WRITE		(1<<2)
-#define _PAGE_CACHE			(1<<3)	/* cache */
-#define _CACHE_MASK			(1<<3)
-#define _PAGE_BUFFERABLE		(1<<4)	/*Fallow Spec. */
+/*
+ * PTE modify bit <26>:
+ */
+#define _PAGE_MODIFY	(1UL << 26)
+#define _PAGE_DIRTY	_PAGE_MODIFY
 
-#define __READABLE	(_PAGE_READ | _PAGE_SILENT_READ | _PAGE_ACCESSED)
-#define __WRITEABLE	(_PAGE_WRITE | _PAGE_SILENT_WRITE | _PAGE_MODIFIED)
-#define _PAGE_CHG_MASK			\
-	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED | _PAGE_CACHE)
+/*
+ * PTE software bits <22:21>:
+ */
+#define _PAGE_ACCESSED	(1UL << 23)	/* implemented in software */
+
+/*
+ * PTE PFN <20:0>
+ */
+#define _PFN_MASK	(0x80000)
+
+#define _PAGE_CHG_MASK	(_PAGE_VALID|_PAGE_PROT_MASK|_PAGE_MODIFY|_PAGE_ACCESSED|_PFN_MASK)
 
 #endif /* _ASM_VAX_PGTABLE_BITS_H */
