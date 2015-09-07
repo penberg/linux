@@ -1,5 +1,6 @@
 extra-y := head.o vmlinux.lds
 
+obj-y += console.o
 obj-y += entry.o
 obj-y += irq.o
 obj-y += process.o
