@@ -4,6 +4,7 @@
 
 #include <asm/console.h>
 #include <asm/setup.h>
+#include <asm/io.h>
 
 extern char command_line[256];
 
@@ -46,6 +47,27 @@ void __init setup_arch(char **cmdline_p)
 	memcpy(boot_command_line, command_line, 256);
 
 	*cmdline_p = boot_command_line;
+}
+
+/*
+ * Relocate kernel image to higher up in the memory and return address to the
+ * start of the new image.
+ */
+void *__init vax_relocate_kernel(void *start, void *end)
+{
+	size_t size;
+	void *dest;
+
+	dest	= (void*) CONFIG_KERNEL_START-PAGE_OFFSET;
+	size	= end-start;
+
+	BUG_ON(dest < start);
+
+	vax_printf("Relocating kernel from %lu to %lu (%lu bytes)\n", start, dest, size);
+
+	memmove(dest, start, size);
+
+	return dest;
 }
 
 void __init vax_start_kernel(void)

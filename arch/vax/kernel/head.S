@@ -26,5 +26,19 @@ start:
 	/* Disable interrupts: */
 	mtpr	$31, $IPR_IPL
 
+	/* Relocate the kernel: */
+	pushal	_end
+	pushal	_stext
+	calls	$2, vax_relocate_kernel
+
+	/* Jump to the relocated kernel: */
+	addl2	$relocated_kernel, %r0
+	subl2	$_stext, %r0
+	jmp	(%r0)
+
+relocated_kernel:
+	/* Start the kernel: */
 	calls	$0, vax_start_kernel
+
+	/* Not reached. */
 	halt
