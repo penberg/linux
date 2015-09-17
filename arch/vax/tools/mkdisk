@@ -1,5 +1,0 @@
-#!/bin/sh
-
-KERNEL=arch/vax/boot/vmlinux.bin
-arch/vax/tools/mkbootblk $KERNEL > vmlinux.dsk
-cat $KERNEL >> vmlinux.dsk

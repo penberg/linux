@@ -1,4 +1,4 @@
-targets	:= vmlinux.bin vmlinux.SYS
+targets	:= vmlinux.bin vmlinux.SYS vmlinux.dsk
 
 OBJCOPYFLAGS := -O binary -R .note.gnu.build-id -R .note -R .comment -S
 
@@ -12,4 +12,11 @@ quiet_cmd_mkmop = MKMOP   $@
 $(obj)/vmlinux.SYS: $(obj)/vmlinux.bin
 	$(call if_changed,mkmop)
 
-clean-files += vmlinux.bin vmlinux.SYS
+quiet_cmd_mkdsk = MKDSK   $@
+      cmd_mkdsk = $(objtree)/arch/vax/tools/mkbootblk $< > $@ && \
+		  cat $< >> $@
+
+$(obj)/vmlinux.dsk: $(obj)/vmlinux.bin
+	$(call if_changed,mkdsk)
+
+clean-files += vmlinux.bin vmlinux.SYS vmlinux.dsk

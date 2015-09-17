@@ -32,8 +32,7 @@ Finally, build Linux/VAX a "vmlinux.dsk" disk image:
 
   export ARCH=vax
   export CROSS_COMPILE=vax-linux-
-  make vmlinux.bin
-  arch/vax/tools/mkdisk
+  make vmlinux.dsk
 
 And then start it up under SIMH:
 
@@ -58,5 +57,7 @@ You are greeted with:
 To boot to Linux from the VAX console, type:
 
   >>>boot dua0:
+
+You can break out to SIMH using CTRL+e.
 
 Happy hacking!
